@@ -5,6 +5,8 @@ import com.qi_rakibul.sfa.application.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+
 @Component
 @RequiredArgsConstructor
 public class UserDaoImpl implements UserDao {
@@ -19,5 +21,10 @@ public class UserDaoImpl implements UserDao {
     @Override
     public boolean existsByEmail(String email) {
         return repository.existsByEmail(email);
+    }
+
+    @Override
+    public Optional<UserEntity> findByEmail(String email) {
+        return repository.findByEmail(email);
     }
 }

@@ -9,5 +9,6 @@ public interface ServiceEndpoints {
 
     interface AUTH_CONTROLLER {
         String SIGNUP = "/signup";
+        String LOGIN = "/login";
     }
 }

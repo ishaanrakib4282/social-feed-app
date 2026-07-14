@@ -1,6 +1,8 @@
 package com.qi_rakibul.sfa.application.service;
 
+import com.qi_rakibul.sfa.api.payload.request.LoginRequest;
 import com.qi_rakibul.sfa.api.payload.request.SignupRequest;
+import com.qi_rakibul.sfa.api.payload.response.AuthResponse;
 import com.qi_rakibul.sfa.application.dao.UserDao;
 import com.qi_rakibul.sfa.application.domain.UserEntity;
 import jakarta.transaction.Transactional;
@@ -14,6 +16,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserDao userDao;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
     @Transactional
     @Override
@@ -37,5 +40,31 @@ public class AuthServiceImpl implements AuthService {
                 .build();
 
         userDao.save(userEntity);
+    }
+
+    @Override
+    public AuthResponse login(LoginRequest request) {
+
+        UserEntity user = userDao
+                .findByEmail(request.email())
+                .orElseThrow(
+                        () -> new IllegalArgumentException(
+                                "Invalid email or password"
+                        )
+                );
+
+        boolean passwordMatches = passwordEncoder.matches(
+                request.password(), user.getPasswordHash()
+        );
+
+        if (!passwordMatches) {
+            throw new IllegalArgumentException(
+                    "Invalid email or password"
+            );
+        }
+
+        String token = jwtService.generateToken(user);
+
+        return new AuthResponse(token);
     }
 }
