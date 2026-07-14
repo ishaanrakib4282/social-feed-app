@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -26,5 +27,10 @@ public class UserDaoImpl implements UserDao {
     @Override
     public Optional<UserEntity> findByEmail(String email) {
         return repository.findByEmail(email);
+    }
+
+    @Override
+    public Optional<UserEntity> findById(UUID id) {
+        return repository.findById(id);
     }
 }

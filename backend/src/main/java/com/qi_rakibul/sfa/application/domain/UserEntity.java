@@ -45,4 +45,8 @@ public class UserEntity {
     void prePersist() {
         createdAt = Instant.now();
     }
+
+    public String getFullName() {
+        return firstName + " " + lastName;
+    }
 }
