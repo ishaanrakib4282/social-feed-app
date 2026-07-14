@@ -2,8 +2,11 @@ package com.qi_rakibul.sfa.application.service;
 
 import com.qi_rakibul.sfa.application.domain.UserEntity;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.UUID;
 
+@Slf4j
 @Service
 public class JwtService {
 
@@ -33,6 +37,7 @@ public class JwtService {
         Date now = new Date();
 
         return Jwts.builder()
+                .issuer("social-feed-app")
                 .subject(user.getId().toString())
                 .claim("email", user.getEmail())
                 .issuedAt(now)
@@ -54,6 +59,16 @@ public class JwtService {
         return UUID.fromString(claims.getSubject());
     }
 
+    public String extractEmail(String token) {
+
+        return Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .get("email", String.class);
+    }
+
     public boolean isValid(String token) {
 
         try {
@@ -63,7 +78,11 @@ public class JwtService {
                     .parseSignedClaims(token);
 
             return true;
-        } catch (Exception ex) {
+        } catch (ExpiredJwtException ex) {
+            log.warn("Token expired");
+            return false;
+        } catch (JwtException | IllegalArgumentException ex) {
+            log.warn("Invalid token");
             return false;
         }
     }
