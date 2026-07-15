@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Component
@@ -34,5 +35,10 @@ public class PostDaoImpl implements PostDao {
                 Visibility.PUBLIC,
                 pageable
         );
+    }
+
+    @Override
+    public Optional<PostEntity> findById(UUID postId) {
+        return repository.findById(postId);
     }
 }

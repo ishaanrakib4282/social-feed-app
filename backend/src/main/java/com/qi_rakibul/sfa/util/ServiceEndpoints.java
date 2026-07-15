@@ -12,4 +12,12 @@ public interface ServiceEndpoints {
         String SIGNUP = "/signup";
         String LOGIN = "/login";
     }
+
+    interface POST_CONTROLLER {
+        String CREATE = "";
+        String SEARCH_ALL_POST = "";
+        String LIKE = "/{id}/like";
+        String UNLIKE = "/{id}/like";
+        String LIKERS = "/{id}/likes";
+    }
 }
