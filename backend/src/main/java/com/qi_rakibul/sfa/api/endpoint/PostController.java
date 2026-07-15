@@ -1,10 +1,8 @@
 package com.qi_rakibul.sfa.api.endpoint;
 
+import com.qi_rakibul.sfa.api.payload.request.CreateCommentRequest;
 import com.qi_rakibul.sfa.api.payload.request.CreatePostRequest;
-import com.qi_rakibul.sfa.api.payload.response.CreatePostResponse;
-import com.qi_rakibul.sfa.api.payload.response.FeedPostResponse;
-import com.qi_rakibul.sfa.api.payload.response.LikeResponse;
-import com.qi_rakibul.sfa.api.payload.response.LikeUserResponse;
+import com.qi_rakibul.sfa.api.payload.response.*;
 import com.qi_rakibul.sfa.application.service.PostService;
 import com.qi_rakibul.sfa.util.ServiceEndpoints;
 import jakarta.validation.Valid;
@@ -27,7 +25,6 @@ public class PostController {
     public CreatePostResponse createPost(
             @Valid @RequestBody CreatePostRequest request
     ) {
-
         return postService.createPost(request);
     }
 
@@ -36,7 +33,6 @@ public class PostController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-
         return postService.getFeed(
                 page,
                 size
@@ -64,5 +60,23 @@ public class PostController {
             @RequestParam(defaultValue = "20") int size
     ) {
         return postService.getPostLikes(postId, page, size);
+    }
+
+    @PostMapping(ServiceEndpoints.POST_CONTROLLER.COMMENT)
+    @ResponseStatus(HttpStatus.CREATED)
+    public CommentResponse createComment(
+            @PathVariable(value = "id") UUID postId,
+            @Valid @RequestBody CreateCommentRequest request
+    ) {
+        return postService.createComment(postId, request);
+    }
+
+    @GetMapping(ServiceEndpoints.POST_CONTROLLER.COMMENTS)
+    public Page<CommentResponse> getComments(
+            @PathVariable(value = "id") UUID postId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return postService.getComments(postId, page, size);
     }
 }

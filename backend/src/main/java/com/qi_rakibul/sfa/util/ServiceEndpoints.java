@@ -19,5 +19,7 @@ public interface ServiceEndpoints {
         String LIKE = "/{id}/like";
         String UNLIKE = "/{id}/like";
         String LIKERS = "/{id}/likes";
+        String COMMENT = "/{id}/comment";
+        String COMMENTS = "/{id}/comments";
     }
 }

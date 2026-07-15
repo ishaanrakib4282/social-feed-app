@@ -1,10 +1,8 @@
 package com.qi_rakibul.sfa.application.service;
 
+import com.qi_rakibul.sfa.api.payload.request.CreateCommentRequest;
 import com.qi_rakibul.sfa.api.payload.request.CreatePostRequest;
-import com.qi_rakibul.sfa.api.payload.response.CreatePostResponse;
-import com.qi_rakibul.sfa.api.payload.response.FeedPostResponse;
-import com.qi_rakibul.sfa.api.payload.response.LikeResponse;
-import com.qi_rakibul.sfa.api.payload.response.LikeUserResponse;
+import com.qi_rakibul.sfa.api.payload.response.*;
 import org.springframework.data.domain.Page;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +23,14 @@ public interface PostService {
     LikeResponse unlikePost(UUID postId) throws IllegalAccessException;
 
     Page<LikeUserResponse> getPostLikes(
+            UUID postId,
+            int page,
+            int size
+    );
+
+    CommentResponse createComment(UUID postId, CreateCommentRequest request);
+
+    Page<CommentResponse> getComments(
             UUID postId,
             int page,
             int size

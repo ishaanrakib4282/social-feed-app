@@ -1,17 +1,13 @@
 package com.qi_rakibul.sfa.application.service;
 
+import com.qi_rakibul.sfa.api.payload.request.CreateCommentRequest;
 import com.qi_rakibul.sfa.api.payload.request.CreatePostRequest;
-import com.qi_rakibul.sfa.api.payload.response.CreatePostResponse;
-import com.qi_rakibul.sfa.api.payload.response.FeedPostResponse;
-import com.qi_rakibul.sfa.api.payload.response.LikeResponse;
-import com.qi_rakibul.sfa.api.payload.response.LikeUserResponse;
+import com.qi_rakibul.sfa.api.payload.response.*;
+import com.qi_rakibul.sfa.application.dao.CommentDao;
 import com.qi_rakibul.sfa.application.dao.PostDao;
 import com.qi_rakibul.sfa.application.dao.PostLikeDao;
 import com.qi_rakibul.sfa.application.dao.UserDao;
-import com.qi_rakibul.sfa.application.domain.AuthenticatedUser;
-import com.qi_rakibul.sfa.application.domain.PostEntity;
-import com.qi_rakibul.sfa.application.domain.PostLikeEntity;
-import com.qi_rakibul.sfa.application.domain.UserEntity;
+import com.qi_rakibul.sfa.application.domain.*;
 import com.qi_rakibul.sfa.application.enums.Visibility;
 import com.qi_rakibul.sfa.error.exception.AccessDeniedException;
 import com.qi_rakibul.sfa.util.SecurityUtils;
@@ -29,6 +25,7 @@ public class PostServiceImpl implements PostService {
     private final UserDao userDao;
     private final PostDao postDao;
     private final PostLikeDao postLikeDao;
+    private final CommentDao commentDao;
 
     @Transactional
     @Override
@@ -92,21 +89,21 @@ public class PostServiceImpl implements PostService {
 
         UUID currentUserId = SecurityUtils.currentUser().getId();
 
+        UserEntity currentUser = userDao.findById(currentUserId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
         PostEntity post = postDao.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("Post not found"));
 
-        UserEntity user = userDao.findById(currentUserId)
-                .orElseThrow();
+        checkPostVisibility(post, currentUser);
 
-        checkPostVisibility(post, user);
-
-        boolean alreadyLiked = postLikeDao.existsByPostAndUser(post, user);
+        boolean alreadyLiked = postLikeDao.existsByPostAndUser(post, currentUser);
 
         if (!alreadyLiked) {
 
             PostLikeEntity postLike = PostLikeEntity.builder()
                     .post(post)
-                    .user(user)
+                    .user(currentUser)
                     .build();
 
             postLikeDao.save(postLike);
@@ -123,15 +120,15 @@ public class PostServiceImpl implements PostService {
 
         UUID currentUserId = SecurityUtils.currentUser().getId();
 
+        UserEntity currentUser = userDao.findById(currentUserId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
         PostEntity post = postDao.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("Post not found"));
 
-        UserEntity user = userDao.findById(currentUserId)
-                .orElseThrow();
+        checkPostVisibility(post, currentUser);
 
-        checkPostVisibility(post, user);
-
-        postLikeDao.deleteByPostAndUser(post, user);
+        postLikeDao.deleteByPostAndUser(post, currentUser);
 
         long likeCount = postLikeDao.countByPost(post);
 
@@ -145,10 +142,10 @@ public class PostServiceImpl implements PostService {
         UUID currentUserId = SecurityUtils.currentUser().getId();
 
         UserEntity currentUser = userDao.findById(currentUserId)
-                .orElseThrow();
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         PostEntity post = postDao.findById(postId)
-                .orElseThrow();
+                .orElseThrow(() -> new IllegalArgumentException("Post not found"));
 
         if (Visibility.PRIVATE.equals(post.getVisibility())
                 && !currentUser.getId().equals(post.getAuthor().getId())) {
@@ -160,6 +157,88 @@ public class PostServiceImpl implements PostService {
                         new LikeUserResponse(
                                 postLike.getUser().getId(),
                                 postLike.getUser().getFullName()
+                        )
+                );
+    }
+
+    @Transactional
+    @Override
+    public CommentResponse createComment(
+            UUID postId,
+            CreateCommentRequest request
+    ) {
+
+        UUID currentUserId = SecurityUtils.currentUser().getId();
+
+        UserEntity currentUser = userDao.findById(currentUserId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        PostEntity post = postDao.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("Post not found"));
+
+        checkPostVisibility(post, currentUser);
+
+        CommentEntity parentComment = null;
+
+        if (request.parentCommentId() != null) {
+            parentComment = commentDao.findById(request.parentCommentId())
+                    .orElseThrow(() -> new IllegalArgumentException("Comment not found"));
+        }
+
+        CommentEntity comment = CommentEntity.builder()
+                .post(post)
+                .author(currentUser)
+                .parentComment(parentComment)
+                .content(request.content())
+                .build();
+
+        commentDao.save(comment);
+
+        return new CommentResponse(
+                comment.getId(),
+                currentUser.getId(),
+                currentUser.getFullName(),
+                parentComment == null
+                        ? null
+                        : parentComment.getId(),
+                comment.getContent(),
+                comment.getCreatedAt(),
+                0,
+                false
+        );
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public Page<CommentResponse> getComments(UUID postId, int page, int size) {
+
+        UUID currentUserId = SecurityUtils.currentUser().getId();
+
+        UserEntity currentUser = userDao.findById(currentUserId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        PostEntity post = postDao.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("Post not found"));
+
+        if (Visibility.PRIVATE.equals(post.getVisibility())
+                && !currentUser.getId().equals(post.getAuthor().getId())) {
+            return Page.empty();
+        }
+
+        return commentDao
+                .findByPost(post, page, size)
+                .map(comment ->
+                        new CommentResponse(
+                                comment.getId(),
+                                comment.getAuthor().getId(),
+                                comment.getAuthor().getFullName(),
+                                comment.getParentComment() == null
+                                        ? null
+                                        : comment.getParentComment().getId(),
+                                comment.getContent(),
+                                comment.getCreatedAt(),
+                                0,
+                                false
                         )
                 );
     }
